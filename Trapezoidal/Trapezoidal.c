@@ -14,6 +14,7 @@ void* semaphoreFunction(void* rank);
 void* busyWaitingFunction(void* rank);
 
 long predictedArea = 0;
+int sharedFlag;
 
 int main(int argc, char** argv){
     long threadCount = strtol(argv[1], NULL, 10);
@@ -27,7 +28,7 @@ int main(int argc, char** argv){
     switch(argv[2][0]) {
        //No locks selected, default to Mutex
         default:
-            fprintf(stderr, "Lock mode not/incorrectly specified, defaulting to Mutex\n");
+            fprintf(stderr, "Lock mode incorrectly specified, defaulting to Mutex\n");
         case MUTEX: 
             threadFunction = &mutexFunction;
         break;
@@ -35,6 +36,7 @@ int main(int argc, char** argv){
             threadFunction = &semaphoreFunction;
         break;
         case BUSY_WAITING: 
+            sharedFlag = 0;
             threadFunction = &busyWaitingFunction;
         break;
     }
