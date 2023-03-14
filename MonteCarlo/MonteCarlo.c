@@ -3,7 +3,7 @@
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
-#include<sys/time.h>
+#include<sys/resource.h>
 
 #define DOUBLERAND ( -1 + ( (double)rand() / (RAND_MAX / 2)))
 
@@ -15,8 +15,6 @@ long long int numberInCircle = 0;
 
 //argv is thread count and toss count 
 int main(int argc, char* argv[]) {
-    struct timeval startTime, endTime;
-    gettimeofday(&startTime, NULL);
     //Count and verify argument variables 
     long threadCount = strtol(argv[1], NULL, 10);
     long long int tossCount = (long long int) strtol(argv[2], NULL, 10);
@@ -43,21 +41,23 @@ int main(int argc, char* argv[]) {
         pthread_create(&threadHeads[thread], NULL, tossIntoCircle, (void*) tossesPerThread);
     }
 
-    //Use master space to count all tosses not partitioned into threads  
+    //Use master space to count all tosses not put inside threads  
     long long int tossesRemaining = tossCount - (threadCount * tossesPerThread);
     tossIntoCircle((void*)tossesRemaining);
 
     for(long thread = 0; thread < threadCount; ++thread) {
         pthread_join(threadHeads[thread], NULL);
     }
-    //Results Reporting
-    printf("Circle Number: %lld, Toss Count: %lld\n",numberInCircle, tossCount);
+    
     double piEstimate = 4.0l * (numberInCircle / (double) tossCount);
+    //Report results
+    struct rusage resourceMeasurer;
+    getrusage(RUSAGE_SELF, &resourceMeasurer);
     double piError = fabs((piEstimate - M_PI) / M_PI) * 100l;
-    gettimeofday(&endTime, NULL);
-    long totalTime = (endTime.tv_sec * 1000000l + endTime.tv_usec)- (startTime.tv_sec * 1000000l + startTime.tv_usec);
+    printf("Circle Number: %lld, Toss Count: %lld\n",numberInCircle, tossCount);
     printf("I estimate Pi to be: %f\nMy error is about: %.2f%%\n", piEstimate, piError);
-    printf("I took %ld seconds to complete this process\n", totalTime);
+    printf("My System time is %ld.%06ld\n", resourceMeasurer.ru_stime.tv_sec, resourceMeasurer.ru_stime.tv_usec);
+    printf("My User time is %ld.%06ld\n", resourceMeasurer.ru_utime.tv_sec, resourceMeasurer.ru_utime.tv_usec);
     //Resource Destruction
     free(threadHeads);
     pthread_mutex_destroy(&numberInCircleMutex);
